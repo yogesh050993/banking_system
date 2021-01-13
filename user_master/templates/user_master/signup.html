@@ -1,0 +1,196 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Signup</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <style>
+        .redborder {
+            border: 1px red solid !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="signup_form" class="form-horizontal" method="post" role="form" autocomplete="off">{% csrf_token %}
+        <h2>Create an account</h2>
+        <div class="form-group">
+            <label for="firstName" class="col-sm-3 control-label">First Name*</label>
+            <div class="col-sm-9">
+                <input type="text" class="form-control isRequired" id="firstName" name="firstName" value="" maxlength="50" autocomplete="off" placeholder="First Name" autofocus>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="lastName" class="col-sm-3 control-label">Last Name</label>
+            <div class="col-sm-9">
+                <input type="text" class="form-control" id="lastName" name="lastName" value="" maxlength="50" placeholder="Last Name" autocomplete="off" autofocus>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="email" class="col-sm-3 control-label">Email* </label>
+            <div class="col-sm-9">
+                <input type="email" class="form-control isRequired email_field" id="email" name="email" placeholder="Email" autocomplete="off" maxlength="100">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-sm-3 control-label">Password*</label>
+            <div class="col-sm-9">
+                <input type="password" id="password" class="form-control isRequired" name="password" placeholder="Password" autocomplete="off" maxlength="20">
+                <small id="length" style="color:red;">**Password must be of 8 digits in length.</small>
+                <br><small id="capital" style="color:red;">**Password must contains atleast one uppercase letter.</small>
+                <br><small id="number" style="color:red;">**Password must contains atleast one number.</small>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="conf_password" class="col-sm-3 control-label">Confirm Password*</label>
+            <div class="col-sm-9">
+                <input type="password" class="form-control isRequired" id="conf_password" name="conf_password" placeholder="Confirm Password" autocomplete="off" maxlength="20">
+                <small id="not_matched_msg" style="color:red; display:none;">**Password not matched.</small>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="phoneNumber" class="col-sm-3 control-label">Phone number </label>
+            <div class="col-sm-9">
+                <input type="text" id="phoneNumber" name="phoneNumber" class="form-control allownumericwithoutdecimal" value="" placeholder="Phone number" maxlength="10" autocomplete="off">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-9 col-sm-offset-3">
+                <span class="help-block">*Required fields</span>
+                <a href="{% url 'user:login' %}" class="btn btn-link">Already have an account?</a>
+            </div>
+        </div>
+        <button type="button" id="signup_button" class="btn btn-primary  btn-block">Create</button>
+
+        <input type="hidden" id="valid_pwd_status" value="0">
+        <input type="hidden" id="pwd_match_status" value="0">
+    </form>
+</div>
+<script src="{% static 'js/base.js' %}"></script>
+<script src="{% static 'js/sweetalert/dist/sweetalert.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        $("#firstName").focus();
+    });
+
+    $("#signup_button").click(function() {
+        var emptyFlag = checkMandatoryField('isRequired');
+
+        if (emptyFlag === 1) {
+            swal({
+                title: 'Mandatory',
+                icon: 'error',
+                text: 'Please fill all mandatory fields',
+            }).then(function() {
+                checkMandatoryField('isRequired');
+            });
+        } else if (!isValidEmail($("#email").val())) {
+            swal({
+                title: 'Invalid Email',
+                icon: 'error',
+                text: 'Please provide a valid email',
+            }).then(function() {
+                $("#email").val('');
+            });
+        } else if (parseInt($("#valid_pwd_status").val()) === 0) {
+            swal({
+                title: 'Invalid Password',
+                icon: 'error',
+                text: 'Please provide a valid password',
+            }).then(function() {
+                $("#password").focus();
+            });
+        } else if (parseInt($("#pwd_match_status").val()) === 0) {
+            swal({
+                title: 'Password not matched',
+                icon: 'error',
+                text: 'Password did not matched',
+            }).then(function() {
+                $("#conf_password").focus();
+            });
+        } else {
+            $.ajax({
+                url: "{% url 'user:signup' %}",
+                data: $("#signup_form").serialize(),
+                method: 'post',
+                async: false,
+                success: function(data) {
+                    if (!data.is_success) {
+                        swal({
+                            title: 'Unknown error',
+                            icon: 'error',
+                            text: 'Something went wrong please try again after some time',
+                        }).then(function() {
+                            $("#conf_password").focus();
+                        });
+                    } else {
+                        swal({
+                            title: 'Success',
+                            icon: 'success',
+                            text: data.msg,
+                        }).then(function() {
+                            window.location.href = '{% url "customer:trx_page" %}';
+                        });
+                    }
+                }
+            });
+        }
+    });
+
+    $("#password").keyup(function () {
+        var pswd = $(this).val();
+        var valid_pwd = 0;
+
+        //validate the length
+        if (pswd.length < 8) {
+            valid_pwd = 0;
+            $('#length').show();
+        } else {
+            valid_pwd = 1;
+            $('#length').hide();
+        }
+
+        //validate capital letter
+        if (pswd.match(/[A-Z]/)) {
+            valid_pwd = 1;
+            $('#capital').hide();
+        } else {
+            valid_pwd = 0;
+            $('#capital').show();
+        }
+
+        //validate number
+        if (pswd.match(/\d/)) {
+            valid_pwd = 1;
+            $('#number').hide();
+        } else {
+            valid_pwd = 0;
+            $('#number').show();
+        }
+
+        $("#valid_pwd_status").val(valid_pwd);
+        match_passwords();
+    });
+
+    $("#conf_password").keyup(function() {
+        match_passwords();
+    });
+
+    function match_passwords(){
+        if ($("#conf_password").val() === $("#password").val()) {
+            $("#pwd_match_status").val(1);
+            $("#not_matched_msg").hide();
+        } else {
+            $("#not_matched_msg").show();
+            $("#pwd_match_status").val(0);
+        }
+    }
+</script>
+</body>
+</html>
+
+

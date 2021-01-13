@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <style>
+        .redborder {
+            border: 1px red solid !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="login_form" class="form-horizontal" method="post" role="form" autocomplete="off">{% csrf_token %}
+        <h2 class="">Login</h2>
+        <div class="form-group">
+            <label for="account_no" class="col-sm-3 control-label">Account No* </label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control isRequired allownumericwithoutdecimal" id="account_no" name="account_no" placeholder="Account Number" autocomplete="off" maxlength="10">
+                <small id="account_no_req" style="color:red;display:none;">Please enter valid account number.</small>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="password" class="col-sm-3 control-label">Password*</label>
+            <div class="col-sm-3">
+                <input type="password" id="password" class="form-control isRequired" name="password" placeholder="Password" autocomplete="off" maxlength="20">
+                <small id="pwd_req" style="color:red;display:none;">Please enter your password.</small>
+            </div>
+        </div>
+        <button type="button" style="width:49%;" id="login_button" class="form-control btn btn-primary btn-block">Login</button>
+        <a class="form-group" style="" href="{% url 'user:signup' %}">Register</a>
+
+    </form>
+</div>
+<script src="{% static 'js/base.js' %}"></script>
+<script src="{% static 'js/sweetalert/dist/sweetalert.min.js' %}"></script>
+    <script>
+
+    $("#login_button").click(function() {
+        var emptyFlag = checkMandatoryField('isRequired');
+
+        if (emptyFlag === 1) {
+            if($("#account_no").val().length === 0) {
+                $("#account_no_req").show();
+            } else {
+                $("#account_no_req").show();
+            }
+            if($("#password").val().length === 0) {
+                $("#pwd_req").show();
+            } else {
+                $("#pwd_req").show();
+            }
+        } else {
+            $.ajax({
+                url: "{% url 'user:login' %}",
+                data: $("#login_form").serialize(),
+                method: 'post',
+                async: false,
+                success: function(data) {
+                    if (data.type === 1) {
+                        swal({
+                            title: 'Not Registered',
+                            icon: 'error',
+                            text: data.msg,
+                        });
+                    } else if (data.type === 2) {
+                        swal({
+                            title: 'Not Active',
+                            icon: 'error',
+                            text: data.msg,
+                        });
+                    } else if (data.type === 3) {
+                        swal({
+                            title: 'Invalid Credentials',
+                            icon: 'error',
+                            text: data.msg,
+                        });
+                    } else {
+                        window.location.href = "{% url 'customer:trx_page' %}";
+                    }
+                }
+            });
+        }
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.keyCode === 13) {  //checks whether the pressed key is "Enter"
+            $('#login_button').trigger('click');
+        }
+    });
+
+    $(document).ready(function() {
+        $("#account_no").focus();
+    });
+
+    </script>
+</body>
+
+
+</html>
+

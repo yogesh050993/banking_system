@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Check Balance</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+
+    <style>
+        .redborder {
+            border: 1px red solid !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <form id="check_bal_form" class="form-horizontal" method="post" role="form" autocomplete="off">{% csrf_token %}
+        <h2>Your Account Balance </h2>
+        <div class="form-group" style="float:right; ">
+            <div class="">
+{#                <a href="{% url 'customer:trx_page' %}" class="btn btn-primary">Transact</a>#}
+                <a href="{% url 'user:logout' %}" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+        <div class="form-group"></div>
+        <div class="form-group">
+            <label for="account_no" class="col-sm-3 control-label">Account Number* </label>
+            <div class="col-sm-9">
+                <select id="account_no" name="account_no" class="form-control isRequired" data-live-search="true" multiple>
+                    <option value="">None</option>
+                    {% for account in accounts %}
+                        <option value="{{ account.pk }}">{{ account.account_no }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="row">
+                <div class="form-group">
+                    <label for="from_date">From date</label>
+                    <input type="date" class="form-control" id="from_date" name="from_date">
+                </div>
+                <div class="form-group">
+                    <label for="from_time">From time</label>
+                    <input type="time" class="form-control" id="from_time" name="from_time" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="row">
+                <div class="form-group">
+                    <label for="to_date">To date</label>
+                    <input type="date" class="form-control" id="to_date" name="to_date">
+                </div>
+                <div class="form-group">
+                    <label for="to_time">To time</label>
+                    <input type="time" class="form-control" id="to_time" name="to_time" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <button style="width: 74%;" type="button" id="get_report" class="btn btn-success btn-block">Download Transaction History</button>
+    </form>
+</div>
+<script src="{% static 'js/base.js' %}"></script>
+<script src="{% static 'js/sweetalert/dist/sweetalert.min.js' %}"></script>
+
+<script>
+
+    $(document).on('change', '#from_date', function () {
+        var dt = $(this).val();
+        if (dt) {
+            $("#from_time").attr('readonly', false);
+        } else {
+            $("#from_time").attr('readonly', true);
+        }
+
+    });
+
+    $(document).on('change', '#to_date', function () {
+        var dt = $(this).val();
+        if (dt) {
+            $("#to_time").attr('readonly', false);
+        } else {
+            $("#to_time").attr('readonly', true);
+        }
+
+    });
+
+    $(document).ready(function() {
+        $("select").selectpicker();
+    });
+
+    $("#get_report").click(function() {
+        var emptyFlag = checkMandatoryField('isRequired');
+
+        if (emptyFlag === 1) {
+            swal({
+                title: 'Account Number',
+                icon: 'info',
+                text: 'Please select al least one account number',
+            }).then(function() {
+                checkMandatoryField('isRequired');
+            });
+        } else {
+            $.ajax({
+                url: "{% url 'common:admin_home' %}",
+                data: $("#check_bal_form").serialize(),
+                method: 'post',
+                async: false,
+                success: function(data) {
+                    if (!data.is_success) {
+                        swal({
+                            title: 'Unknown error',
+                            icon: 'error',
+                            text: 'Something went wrong please try again after some time',
+                        }).then(function() {
+                            $("#account_no").focus();
+                        });
+                    } else {
+                        window.location.href = '{% url "common:download_report" %}'
+
+                    }
+                }
+            });
+        }
+    });
+
+</script>
+</body>
+</html>
+
+
